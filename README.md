@@ -43,6 +43,16 @@ multivariate forecasting with past and future covariates.
   TiRex-2 activates 38.4M parameters in univariate mode and an additional 44.1M parameters
   for multivariate forecasting.
 
+## Forecasting and recurrent state
+
+The open Python API forecasts from the supplied history on each call. Its recurrent architecture supports temporal modeling, but the wrapper does not expose persistent streaming state or a save/restore API. In [MultivariateBlock.forward](src/tirex2/model/component/variate_mixing_block.py), time- and variate-mixer states are discarded and the returned state is `{}`; returning state for streaming remains planned work.
+
+[BiXLSTM](src/tirex2/model/component/bi_xlstm.py) selects sLSTM or mLSTM according to the checkpoint's time-mixer recipe. This TiRex-2 forecasting architecture is separate from the Apple xLSTM-Metal port's sLSTM training / mLSTM inference split. Cell type and training framework are separate choices.
+
+Known covariates can be processed in both time directions, while target variates use the forward path. A streaming implementation must account for those reverse scans, convolution history, patch remainders, and scaling state as well as recurrent cell state. Reusing a cell tuple alone does not establish equivalence to a full-history forecast.
+
+The recurrent state is a compressed temporal representation, not an indexed episodic-memory store. Streaming state carry, hibernation, and episode retrieval require their own implementation and validation. The [TiRex-2 Pro](#tirex-2-pro) streaming offering is separate from this open wrapper.
+
 ## Installation
 ### Via Pip
 ```bash
